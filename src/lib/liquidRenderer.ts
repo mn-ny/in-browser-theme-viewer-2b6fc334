@@ -1,3 +1,4 @@
+
 import { Liquid, LiquidOptions } from 'liquidjs';
 import { vfs } from './vfs';
 
@@ -294,14 +295,14 @@ class ShopifyLiquidRenderer {
       
       let content = '';
       
-      // Fix: Provide the template content as the first argument to parseAndRender
+      // Fix: Add templateContent as the first argument to parseAndRender
       content = await this.engine.parseAndRender(templateContent, data);
       
       // Then render it in the layout if available
       if (layoutTemplate) {
         // In Shopify, {{ content_for_layout }} is replaced with the template content
         data.content_for_layout = content;
-        // Ensure we pass both arguments here as well
+        // Fix: Pass the layoutTemplate as the first argument to parseAndRender
         content = await this.engine.parseAndRender(layoutTemplate, data);
       }
 
