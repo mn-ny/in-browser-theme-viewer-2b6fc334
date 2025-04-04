@@ -1,4 +1,3 @@
-
 import { Liquid, LiquidOptions } from 'liquidjs';
 import { vfs } from './vfs';
 
@@ -302,6 +301,7 @@ class ShopifyLiquidRenderer {
       if (layoutTemplate) {
         // In Shopify, {{ content_for_layout }} is replaced with the template content
         data.content_for_layout = content;
+        // Ensure we pass both arguments here as well
         content = await this.engine.parseAndRender(layoutTemplate, data);
       }
 
