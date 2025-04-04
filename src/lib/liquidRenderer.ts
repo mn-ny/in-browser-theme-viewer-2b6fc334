@@ -83,18 +83,17 @@ class ShopifyLiquidRenderer {
           
           return false;
         },
-        // Add these two methods to satisfy the FS interface
-        readFile: (file: string, callback: (err: Error | null, content?: string) => void) => {
+        // Fix the async methods to match Promise-based signatures required by LiquidJS
+        readFile: async (filepath: string): Promise<string> => {
           try {
-            const content = this.engine.options.fs?.readFileSync(file);
-            callback(null, content);
+            const content = this.engine.options.fs?.readFileSync(filepath);
+            return content ?? '';
           } catch (err) {
-            callback(err as Error);
+            throw err;
           }
         },
-        exists: (file: string, callback: (exists: boolean) => void) => {
-          const exists = this.engine.options.fs?.existsSync(file) || false;
-          callback(exists);
+        exists: async (filepath: string): Promise<boolean> => {
+          return this.engine.options.fs?.existsSync(filepath) || false;
         },
         resolve: (root: string, file: string, ext: string) => {
           if (file.startsWith('/')) return file;
@@ -143,7 +142,8 @@ class ShopifyLiquidRenderer {
           let sectionPath = `sections/${sectionName}`;
           if (!sectionPath.endsWith('.liquid')) sectionPath += '.liquid';
           
-          const template = engine.options.fs?.readFileSync(sectionPath);
+          // Pass empty string as default value to avoid undefined
+          const template = engine.options.fs?.readFileSync(sectionPath) || '';
           return engine.parseAndRender(template, context.environments);
         } catch (error) {
           return `<!-- Section not found: ${sectionName} -->`;
