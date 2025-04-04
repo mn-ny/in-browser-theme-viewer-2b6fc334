@@ -1,3 +1,4 @@
+
 import { Liquid, LiquidOptions } from 'liquidjs';
 import { vfs } from './vfs';
 
@@ -19,6 +20,7 @@ class ShopifyLiquidRenderer {
       cache: false,
       globals: {},
       fs: {
+        // Implement all required methods for the FS interface
         readFileSync: (file: string) => {
           // Normalize file path for lookups
           const filePath = file.startsWith('/') ? file.substring(1) : file;
@@ -81,6 +83,19 @@ class ShopifyLiquidRenderer {
           
           return false;
         },
+        // Add these two methods to satisfy the FS interface
+        readFile: (file: string, callback: (err: Error | null, content?: string) => void) => {
+          try {
+            const content = this.engine.options.fs?.readFileSync(file);
+            callback(null, content);
+          } catch (err) {
+            callback(err as Error);
+          }
+        },
+        exists: (file: string, callback: (exists: boolean) => void) => {
+          const exists = this.engine.options.fs?.existsSync(file) || false;
+          callback(exists);
+        },
         resolve: (root: string, file: string, ext: string) => {
           if (file.startsWith('/')) return file;
           return `${root}${file}${ext}`;
@@ -121,14 +136,15 @@ class ShopifyLiquidRenderer {
         this.templates = [];
       },
       render: async function(context) {
-        const sectionName = await this.liquid.evalValue(this.sectionName, context);
+        const engine = context.getRegister()['liquid'] || this.liquid;
+        const sectionName = await engine.evalValue(this.sectionName, context);
         try {
           // Try to find the section in our VFS
           let sectionPath = `sections/${sectionName}`;
           if (!sectionPath.endsWith('.liquid')) sectionPath += '.liquid';
           
-          const template = context.liquid.fs.readFileSync(sectionPath);
-          return context.liquid.parseAndRender(template, context.environments);
+          const template = engine.options.fs?.readFileSync(sectionPath);
+          return engine.parseAndRender(template, context.environments);
         } catch (error) {
           return `<!-- Section not found: ${sectionName} -->`;
         }
