@@ -19,17 +19,8 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ templatePath = 'index' }) =
         setLoading(true);
         setError(null);
         
-        // Ensure templatePath has the correct format
-        let path = templatePath;
-        if (!path.startsWith('templates/')) {
-          path = `templates/${path}`;
-        }
-        if (!path.endsWith('.liquid')) {
-          path = `${path}.liquid`;
-        }
-        
-        // Render the liquid template
-        const html = await liquidRenderer.render({ template: path });
+        // Let the liquidRenderer handle path normalization
+        const html = await liquidRenderer.render({ template: templatePath });
         
         // Create a blob from the HTML content
         const blob = new Blob([html], { type: 'text/html' });

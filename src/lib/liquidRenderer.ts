@@ -1,3 +1,4 @@
+
 import { Liquid, LiquidOptions } from 'liquidjs';
 import { vfs } from './vfs';
 
@@ -18,6 +19,7 @@ class ShopifyLiquidRenderer {
       extname: '.liquid',
       cache: false,
       globals: {},
+      relativeReference: false, // Fix the warning about fs.dirname
       fs: {
         // Implement all required methods for the FS interface
         readFileSync: (file: string) => {
@@ -223,12 +225,13 @@ class ShopifyLiquidRenderer {
   
   public async render(options: RenderOptions = {}): Promise<string> {
     try {
-      const { template = 'templates/index', mockData = {} } = options;
+      let { template = 'index', mockData = {} } = options;
       const data = { ...this.mockData, ...mockData };
       
       // Get layout template
       let layoutTemplate: string | null = null;
       const layoutFiles = vfs.getFilesByPath('layout/');
+      
       if (layoutFiles.length > 0) {
         const themeLayout = layoutFiles.find(f => f.name === 'theme.liquid') || layoutFiles[0];
         if (typeof themeLayout.content === 'string') {
@@ -236,17 +239,48 @@ class ShopifyLiquidRenderer {
         }
       }
       
-      // Get content template
+      // Normalize template path - important to handle various formats
       let templatePath = template;
-      if (!templatePath.endsWith('.liquid')) templatePath += '.liquid';
       
-      // If template doesn't start with templates/, add it
-      if (!templatePath.startsWith('templates/')) {
+      // If template is just a name without extension or path
+      if (!templatePath.includes('/') && !templatePath.includes('.')) {
+        templatePath = `templates/${templatePath}.liquid`;
+      } 
+      // If it's a name with extension but no path
+      else if (!templatePath.includes('/') && templatePath.includes('.')) {
         templatePath = `templates/${templatePath}`;
+      } 
+      // If it has path but no extension
+      else if (!templatePath.endsWith('.liquid')) {
+        templatePath += '.liquid';
       }
       
-      const templateFile = vfs.getFile(templatePath);
+      console.log('Looking for template at path:', templatePath);
+      
+      // Try to find the template directly first
+      let templateFile = vfs.getFile(templatePath);
+      
+      // If not found, try alternate paths
       if (!templateFile) {
+        // Try without templates/ prefix if it was already added
+        if (templatePath.startsWith('templates/')) {
+          const altPath = templatePath.substring('templates/'.length);
+          templateFile = vfs.getFile(altPath);
+        } 
+        
+        // Try with templates/ prefix if not already added
+        if (!templateFile && !templatePath.startsWith('templates/')) {
+          const altPath = `templates/${templatePath}`;
+          templateFile = vfs.getFile(altPath);
+        }
+      }
+      
+      // Log all available templates to help debugging
+      console.log('Available templates:', vfs.getFilesByPath('templates/').map(f => f.path));
+      
+      // If template still not found, display error
+      if (!templateFile) {
+        console.error(`Template not found: ${templatePath}`);
         return `<div class="error">Template not found: ${templatePath}</div>`;
       }
       

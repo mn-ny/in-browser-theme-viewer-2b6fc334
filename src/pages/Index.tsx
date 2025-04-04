@@ -6,7 +6,7 @@ import FileViewer from '@/components/FileViewer';
 import ThemePreview from '@/components/ThemePreview';
 import { VirtualFile } from '@/lib/vfs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable";
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Laptop, Smartphone, Tablet, RefreshCcw, GithubIcon } from 'lucide-react';
@@ -180,15 +180,13 @@ const Index = () => {
             </Tabs>
           </ResizablePanel>
           
-          {/* Fixed ResizableHandle to use correct name from the component */}
-          <ResizablePanel className="w-px bg-border" />
+          <ResizableHandle />
           
           <ResizablePanel defaultSize={30}>
             <FileViewer file={selectedFile} />
           </ResizablePanel>
           
-          {/* Fixed ResizableHandle to use correct name from the component */}
-          <ResizablePanel className="w-px bg-border" />
+          <ResizableHandle />
           
           <ResizablePanel defaultSize={50}>
             <div className="h-full flex flex-col">
