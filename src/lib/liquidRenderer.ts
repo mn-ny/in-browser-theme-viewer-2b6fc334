@@ -1,4 +1,3 @@
-
 import { Liquid, LiquidOptions } from 'liquidjs';
 import { vfs } from './vfs';
 
@@ -144,6 +143,7 @@ class ShopifyLiquidRenderer {
           
           // Pass empty string as default value to avoid undefined
           const template = engine.options.fs?.readFileSync(sectionPath) || '';
+          // Fix: Add the required template string parameter to parseAndRender
           return engine.parseAndRender(template, context.environments);
         } catch (error) {
           return `<!-- Section not found: ${sectionName} -->`;
