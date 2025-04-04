@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { liquidRenderer } from '@/lib/liquidRenderer';
 import { useToast } from '@/hooks/use-toast';
+import { vfs } from '@/lib/vfs';
 
 interface ThemePreviewProps {
   templatePath?: string;
@@ -18,6 +19,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ templatePath = 'index' }) =
       try {
         setLoading(true);
         setError(null);
+        
+        console.log('Files in VFS:', vfs.getAllFiles().map(f => f.path));
+        console.log('Attempting to render template:', templatePath);
         
         // Let the liquidRenderer handle path normalization
         const html = await liquidRenderer.render({ template: templatePath });

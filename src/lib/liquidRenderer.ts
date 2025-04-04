@@ -239,59 +239,63 @@ class ShopifyLiquidRenderer {
         }
       }
       
-      // Normalize template path - important to handle various formats
+      // Enhanced template path normalization
       let templatePath = template;
+      let templateContent: string | null = null;
       
-      // If template is just a name without extension or path
-      if (!templatePath.includes('/') && !templatePath.includes('.')) {
-        templatePath = `templates/${templatePath}.liquid`;
-      } 
-      // If it's a name with extension but no path
-      else if (!templatePath.includes('/') && templatePath.includes('.')) {
-        templatePath = `templates/${templatePath}`;
-      } 
-      // If it has path but no extension
-      else if (!templatePath.endsWith('.liquid')) {
-        templatePath += '.liquid';
-      }
+      // Log all available files for debugging
+      console.log('All available files:', vfs.getAllFiles().map(f => f.path));
       
-      console.log('Looking for template at path:', templatePath);
-      
-      // Try to find the template directly first
+      // First, try direct path match
       let templateFile = vfs.getFile(templatePath);
       
-      // If not found, try alternate paths
-      if (!templateFile) {
-        // Try without templates/ prefix if it was already added
-        if (templatePath.startsWith('templates/')) {
-          const altPath = templatePath.substring('templates/'.length);
-          templateFile = vfs.getFile(altPath);
-        } 
-        
-        // Try with templates/ prefix if not already added
-        if (!templateFile && !templatePath.startsWith('templates/')) {
-          const altPath = `templates/${templatePath}`;
-          templateFile = vfs.getFile(altPath);
+      // If not found, try different path combinations
+      const possiblePaths = [
+        templatePath,
+        `${templatePath}.liquid`,
+        `templates/${templatePath}`,
+        `templates/${templatePath}.liquid`,
+      ];
+      
+      console.log('Trying possible template paths:', possiblePaths);
+      
+      for (const path of possiblePaths) {
+        templateFile = vfs.getFile(path);
+        if (templateFile && typeof templateFile.content === 'string') {
+          templatePath = path;
+          templateContent = templateFile.content;
+          console.log('Found template at:', path);
+          break;
         }
       }
       
-      // Log all available templates to help debugging
-      console.log('Available templates:', vfs.getFilesByPath('templates/').map(f => f.path));
+      // If still not found, look in all files for a match
+      if (!templateContent) {
+        const allFiles = vfs.getAllFiles();
+        const possibleMatches = allFiles.filter(f => 
+          f.path.includes(templatePath) || 
+          f.name.includes(templatePath)
+        );
+        
+        if (possibleMatches.length > 0) {
+          const bestMatch = possibleMatches[0];
+          if (typeof bestMatch.content === 'string') {
+            templatePath = bestMatch.path;
+            templateContent = bestMatch.content;
+            console.log('Found template via fuzzy match:', templatePath);
+          }
+        }
+      }
       
       // If template still not found, display error
-      if (!templateFile) {
+      if (!templateContent) {
         console.error(`Template not found: ${templatePath}`);
         return `<div class="error">Template not found: ${templatePath}</div>`;
       }
       
-      if (typeof templateFile.content !== 'string') {
-        return `<div class="error">Template is not text: ${templatePath}</div>`;
-      }
-      
-      const templateContent = templateFile.content;
       let content = '';
       
-      // Render the template first
+      // Fix: Provide the template content as the first argument to parseAndRender
       content = await this.engine.parseAndRender(templateContent, data);
       
       // Then render it in the layout if available
